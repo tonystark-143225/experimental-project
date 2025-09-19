@@ -3,3 +3,22 @@ service:
   identifier: deployweb
   orgIdentifier: default
   projectIdentifier: appattendance
+  serviceDefinition:
+    spec:
+      manifests:
+        - manifest:
+            identifier: deployweb
+            type: K8sManifest
+            spec:
+              store:
+                type: Github
+                spec:
+                  connectorRef: account.tonystarkac
+                  gitFetchType: Branch
+                  paths:
+                    - k8s
+                  repoName: experimental-project
+                  branch: main
+              skipResourceVersioning: false
+              enableDeclarativeRollback: false
+    type: Kubernetes
