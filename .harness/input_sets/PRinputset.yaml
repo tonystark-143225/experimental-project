@@ -1,0 +1,14 @@
+inputSet:
+  name: PR-inputset
+  identifier: PRinputset
+  orgIdentifier: default
+  projectIdentifier: appattendance
+  pipeline:
+    identifier: testing_configuration
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
