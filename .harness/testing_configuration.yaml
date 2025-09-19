@@ -52,7 +52,7 @@ pipeline:
                     source:
                       type: Inline
                       spec:
-                        script: |-
+                        script: |
                           #!/bin/bash
                           set -euo pipefail
 
@@ -97,7 +97,11 @@ pipeline:
                           # 🔁 Trigger Handling Logic
                           # ----------------------------
 
-                          if [[ "$triggerType" == "Scheduled" ]]; then
+                          if [[ "$triggerType" == "Manual" ]]; then
+                              echo "🚫 Manual trigger detected → Skipping build"
+                              isOkForBuild=0
+
+                          elif [[ "$triggerType" == "Scheduled" ]]; then
                               # Scheduled (cron) build
                               appVersion="0.0.0-cron-$(date +%Y%m%d%H%M%S)"
                               isOkForBuild=1
@@ -130,7 +134,7 @@ pipeline:
                               fi
 
                           elif [[ "$branch" != "null" && "$branch" != "" ]]; then
-                              # Branch push or manual run on a branch
+                              # Branch push or webhook run on a branch
                               cleanBranch="${branch//[\/,_]/-}"
                               appVersion="0.0.0-${cleanBranch}-${commitId}"
                               isOkForBuild=1
@@ -143,6 +147,10 @@ pipeline:
                               echo "⚠️  Unknown or unsupported trigger type: $triggerType / event: $event"
                               isOkForBuild=0
                           fi
+
+                          # Print summary
+                          echo "Resolved appVersion: $appVersion"
+                          echo "isOkForBuild=$isOkForBuild, isOkForDev=$isOkForDev, isOkForQa=$isOkForQa, isOkForPprAndPrd=$isOkForPprAndPrd, isCronBuild=$isCronBuild"
                     environmentVariables: []
                     outputVariables:
                       - name: okBuild
@@ -194,3 +202,7 @@ pipeline:
                     image: nginx:latest
                     shell: Sh
                     command: echo "test"
+        when:
+          pipelineStatus: Success
+          condition: |
+            <+pipeline.stages.trigger_configuration.spec.execution.steps.inticonfig.output.outputVariables.okBuild> == "1"
