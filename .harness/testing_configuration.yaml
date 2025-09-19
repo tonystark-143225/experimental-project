@@ -143,6 +143,32 @@ pipeline:
           pipelineStatus: Success
           condition: |
             <+pipeline.stages.trigger_configuration.spec.execution.steps.inticonfig.output.outputVariables.okBuild> == "1"
+    - stage:
+        name: dev-approval
+        identifier: devapproval
+        description: ""
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: dev-approval
+                  identifier: devapproval
+                  type: HarnessApproval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: |-
+                      Please review the following information
+                      and approve the pipeline progression
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - devapprovers
+                    isAutoRejectEnabled: false
+                    approverInputs: []
+        tags: {}
   properties:
     ci:
       codebase:
