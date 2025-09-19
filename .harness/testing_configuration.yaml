@@ -1,0 +1,214 @@
+pipeline:
+  name: testing_configuration
+  identifier: testing_configuration
+  projectIdentifier: appattendance
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: pipeline_init
+        identifier: pipeline_init
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: false
+          caching:
+            enabled: true
+            override: false
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: <+input>
+              namespace: <+input>
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: init_codebase
+                  identifier: init_codebase
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: ubuntu:latest
+                    shell: Bash
+                    command: echo "test"
+    - stage:
+        name: trigger_configuration
+        identifier: inti_configuration
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: inticonfig
+                  identifier: inticonfig
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          #!/bin/bash
+                          set -e
+
+                          branch=<+codebase.branch>
+                          tag=<+codebase.tag>
+                          commitId=<+codebase.commitSha>
+                          srcbranch=<+trigger.sourceBranch>
+                          event=<+trigger.event>
+
+                          # Default flags
+                          isOkForBuild=0
+                          isOkForDev=0
+                          isOkForQa=0
+                          isOkForPprAndPrd=0
+
+                          # Versioning logic
+                          if [[ "$event" == "PR" ]]; then
+                              appVersion=0.0.0-${srcbranch//[\/,_]/-}-$commitId
+                              isOkForBuild=1
+                              isOkForDev=1
+                              isOkForQa=0
+                              isOkForPprAndPrd=0
+
+                          elif [[ "$tag" == "null" ]]; then
+                              if [[ "$branch" == "null" ]]; then
+                                  appVersion=0.0.0-$(date +%Y%m%d%H%M%S)
+                              else
+                                  appVersion=0.0.0-${branch//[\/,_]/-}-$commitId
+                              fi
+                              isOkForBuild=1
+                              isOkForDev=1
+                              isOkForQa=1
+                              isOkForPprAndPrd=0
+
+                          else
+                              appVersion=${tag//[\/,_]/-}
+                              regexStableReleaseTag="^([0-9][0-9])(\.([0-9][0-9])){2,5}$"
+                              regexUnstableReleaseTag="^([0-9][0-9])(\.([0-9][0-9])){2,5}-.*$"
+
+                              if [[ $appVersion =~ $regexStableReleaseTag ]]; then
+                                  isOkForBuild=1
+                                  isOkForDev=1
+                                  isOkForQa=1
+                                  isOkForPprAndPrd=1
+                              elif [[ $appVersion =~ $regexUnstableReleaseTag ]]; then
+                                  isOkForBuild=1
+                                  isOkForDev=1
+                                  isOkForQa=1
+                                  isOkForPprAndPrd=0
+                              else
+                                  isOkForBuild=0
+                                  isOkForDev=0
+                                  isOkForQa=0
+                                  isOkForPprAndPrd=0
+                              fi
+                          fi
+
+                          echo "Resolved appVersion: $appVersion"
+                          echo "isOkForBuild=$isOkForBuild, isOkForDev=$isOkForDev, isOkForQa=$isOkForQa, isOkForPprAndPrd=$isOkForPprAndPrd"
+
+                          # Artifactory existence check (only if build is allowed)
+                          if [[ $isOkForBuild -eq 1 ]]; then
+                              artifactoryRequestBody="items.find({\"repo\":\"xlcgtpsdc-iqma-generic\", \"path\":\"completedBuilds/app-iqma\", \"name\":\"$appVersion.completed\"})"
+                              artifactoryResponse=$(curl -X POST -H "Content-Type: text/plain" \
+                                  -d "$artifactoryRequestBody" \
+                                  -u "${pipeline.variables.jfrog_nuget_username}:${pipeline.variables.jfrog_nuget_token_npd}" \
+                                  "https://artifactory.platform.axal-cloud.com/artifactory/api/search/aql" -s)
+
+                              echo "Artifactory response:"
+                              echo "$artifactoryResponse"
+
+                              artifactoryNbExisting=$(echo "$artifactoryResponse" | jq '.range.total')
+                              echo "Artifactory nbExisting: $artifactoryNbExisting"
+
+                              if [[ $artifactoryNbExisting -ne 0 ]]; then
+                                  echo "Artifactory package already exists for this version"
+                                  echo "Build will be skipped and already existing package in Artifactory for this version will be used"
+                                  isOkForBuild=0
+                              fi
+                          fi
+
+                          echo "Final decision: isOkForBuild=$isOkForBuild"
+                    environmentVariables: []
+                    outputVariables:
+                      - name: okBuild
+                        type: String
+                        value: isOkForBuild
+                      - name: okDev
+                        type: String
+                        value: isOkForDev
+                      - name: okQa
+                        type: String
+                        value: isOkForQa
+                      - name: okPprAndPrd
+                        type: String
+                        value: isOkForPprAndPrd
+                      - name: appVersion
+                        type: String
+                        value: appVersion
+                      - name: commitId
+                        type: String
+                        value: commitId
+                  timeout: 10m
+        tags: {}
+    - stage:
+        name: Build
+        identifier: Build
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: false
+          caching:
+            enabled: true
+            override: false
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: <+input>
+              namespace: <+input>
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    connectorRef: <+input>
+                    image: ngnix:lates
+                    shell: Sh
+                    command: echo "test"
+    - stage:
+        name: DEV approval
+        identifier: DEV_approval
+        description: ""
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: Ask Dev
+                  identifier: Ask_Dev
+                  type: HarnessApproval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: |-
+                      Please review the following information
+                      and approve the pipeline progression
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - account._account_all_users
+                    isAutoRejectEnabled: false
+                    approverInputs: []
+                    callbackId: ""
+        tags: {}
