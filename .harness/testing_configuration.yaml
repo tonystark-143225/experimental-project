@@ -89,25 +89,7 @@ pipeline:
                           # echo "appVersion=$appVersion" >> build.env
                           # echo "commitId=$commitId" >> build.env
                     environmentVariables: []
-                    outputVariables:
-                      - name: okBuild
-                        type: String
-                        value: isOkForBuild
-                      - name: okDev
-                        type: String
-                        value: isOkForDev
-                      - name: okQa
-                        type: String
-                        value: isOkForQa
-                      - name: okPprAndPrd
-                        type: String
-                        value: isOkForPprAndPrd
-                      - name: appVersion
-                        type: String
-                        value: appVersion
-                      - name: commitId
-                        type: String
-                        value: commitId
+                    outputVariables: []
                   timeout: 10m
         tags: {}
     - stage:
