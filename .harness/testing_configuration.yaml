@@ -73,12 +73,12 @@ pipeline:
                           # ------------------------------------------------------------
                           # 🟢 Final decision
                           # ------------------------------------------------------------
-                          echo "Resolved appVersion: $appVersion"
-                          echo "isOkForBuild=$isOkForBuild"
-                          echo "isOkForDev=$isOkForDev"
-                          echo "isOkForQa=$isOkForQa"
-                          echo "isOkForPprAndPrd=$isOkForPprAndPrd"
-                          echo "isCronBuild=$isCronBuild"
+                          #echo "Resolved appVersion: $appVersion"
+                          # echo "isOkForBuild=$isOkForBuild"
+                          # echo "isOkForDev=$isOkForDev"
+                          # echo "isOkForQa=$isOkForQa"
+                          # echo "isOkForPprAndPrd=$isOkForPprAndPrd"
+                          # echo "isCronBuild=$isCronBuild"
 
                           # Export for Harness output variables
                           # echo "isOkForBuild=$isOkForBuild" >> build.env
