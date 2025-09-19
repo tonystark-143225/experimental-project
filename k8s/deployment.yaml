@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: devops-portfolio:latest  # Replace with your image registry/tag
+        image: vamsiharikanth/devops-portfolio:latest  # Replace with your image registry/tag
         ports:
         - containerPort: 80
         resources:
