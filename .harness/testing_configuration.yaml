@@ -170,45 +170,19 @@ pipeline:
           infrastructure:
             type: KubernetesDirect
             spec:
-              connectorRef: <+input>
-              namespace: <+input>
+              connectorRef: account.test
+              namespace: dev
+              automountServiceAccountToken: true
               nodeSelector: {}
               os: Linux
           execution:
             steps:
               - step:
                   type: Run
-                  name: Run_1
+                  name: test
                   identifier: Run_1
                   spec:
-                    connectorRef: <+input>
-                    image: ngnix:lates
+                    connectorRef: mydockerhub
+                    image: nginx:latest
                     shell: Sh
                     command: echo "test"
-    - stage:
-        name: DEV approval
-        identifier: DEV_approval
-        description: ""
-        type: Approval
-        spec:
-          execution:
-            steps:
-              - step:
-                  name: Ask Dev
-                  identifier: Ask_Dev
-                  type: HarnessApproval
-                  timeout: 1d
-                  spec:
-                    approvalMessage: |-
-                      Please review the following information
-                      and approve the pipeline progression
-                    includePipelineExecutionHistory: true
-                    approvers:
-                      minimumCount: 1
-                      disallowPipelineExecutor: false
-                      userGroups:
-                        - account._account_all_users
-                    isAutoRejectEnabled: false
-                    approverInputs: []
-                    callbackId: ""
-        tags: {}
