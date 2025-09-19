@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Learn with Vamsi | DevOps Portfolio</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fira+Code&display=swap');
+
+    body {
+      background: linear-gradient(135deg, #0d0d0d 0%, #001a1a 100%);
+      color: #00ff99;
+      font-family: 'Fira Code', monospace;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      text-align: center;
+      padding: 40px 20px 20px;
+      font-size: 2.8em;
+      color: #00e6e6;
+      text-shadow: 0 0 15px #00ffff, 0 0 30px #00ffff;
+      user-select: none;
+    }
+
+    .console {
+      background: #000;
+      padding: 25px 30px;
+      margin: 20px auto 40px;
+      border-radius: 15px;
+      width: 90%;
+      max-width: 900px;
+      box-shadow: 0 0 30px #00ffcc;
+      overflow: hidden;
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+    }
+
+    .log-line {
+      white-space: pre-line;
+      margin: 6px 0;
+      opacity: 1;
+      font-size: 1.1em;
+      line-height: 1.4em;
+    }
+
+    .category {
+      color: #ffcc00;
+      font-weight: 700;
+      font-size: 1.2em;
+      margin-top: 15px;
+      user-select: text;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px 10px;
+      color: #888;
+      font-size: 0.95em;
+      user-select: none;
+      border-top: 1px solid #004d4d;
+      background: #001a1a;
+    }
+
+    /* Typing effect */
+    .typing {
+      border-right: 2px solid #00ff99;
+      animation: blinkCaret 0.75s step-end infinite;
+      display: inline-block;
+    }
+
+    @keyframes blinkCaret {
+      from, to { border-color: transparent; }
+      50% { border-color: #00ff99; }
+    }
+  </style>
+</head>
+<body>
+  <header>🚀 Learn with Vamsi | DevOps Portfolio 🚀</header>
+
+  <div class="console" aria-label="DevOps skills console">
+    <div class="log-line category">> Operating Systems:</div>
+    <div class="log-line typing">✔ Linux (RHEL, CentOS, Ubuntu), Windows</div>
+
+    <div class="log-line category">> Version Control Systems:</div>
+    <div class="log-line typing">✔ Git, GitHub, SVN</div>
+
+    <div class="log-line category">> CI/CD:</div>
+    <div class="log-line typing">✔ Azure DevOps, Jenkins, Harness, Bamboo</div>
+
+    <div class="log-line category">> Build Tools & Artifact Stores:</div>
+    <div class="log-line typing">✔ Maven, MS Build-NuGet, Node-NPM, Nexus, JFrog</div>
+
+    <div class="log-line category">> Configuration Management:</div>
+    <div class="log-line typing">✔ Ansible</div>
+
+    <div class="log-line category">> Containers & Orchestration:</div>
+    <div class="log-line typing">✔ Docker, Buildah, Kubernetes, OpenShift (v4.0+), EKS</div>
+
+    <div class="log-line category">> Cloud Technologies:</div>
+    <div class="log-line typing">✔ AWS, Azure</div>
+
+    <div class="log-line category">> Infrastructure as Code:</div>
+    <div class="log-line typing">✔ Terraform, Helm</div>
+
+    <div class="log-line category">> Scripting Languages:</div>
+    <div class="log-line typing">✔ Shell, PowerShell</div>
+
+    <div class="log-line category">> Monitoring Tools:</div>
+    <div class="log-line typing">✔ Prometheus, Grafana, Nagios</div>
+  </div>
+
+  <footer>💡 Built with ❤️ by Vamsi | DevOps Engineer</footer>
+
+  <script>
+    // Typing effect for each log line
+    function typeLine(element, delay = 50) {
+      const text = element.textContent.trim();
+      let i = 0;
+      element.textContent = '';
+      element.style.opacity = 1;
+      function type() {
+        if (i < text.length) {
+          element.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, delay);
+        } else {
+          element.classList.remove('typing');
+        }
+      }
+      type();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const lines = document.querySelectorAll('.log-line.typing');
+      let delay = 500;
+      lines.forEach((line, index) => {
+        setTimeout(() => {
+          typeLine(line);
+        }, delay);
+        delay += line.textContent.trim().length * 50 + 300;
+      });
+    });
+  </script>
+</body>
+</html>
