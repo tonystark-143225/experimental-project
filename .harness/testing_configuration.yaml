@@ -132,7 +132,33 @@ pipeline:
                         - devapprovers
                     isAutoRejectEnabled: false
                     approverInputs: []
+              - step:
+                  type: ShellScript
+                  name: isApproved
+                  identifier: isApproved
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: isApproved=1
+                    environmentVariables: []
+                    outputVariables:
+                      - name: isApproved
+                        type: String
+                        value: isApproved
+                  timeout: 10m
         tags: {}
+        variables:
+          - name: okDev
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okDev>
+        when:
+          pipelineStatus: All
+          condition: <+stage.stage.variables.okDev> == "1"
     - stage:
         name: dev-deploy
         identifier: devdeploy
@@ -172,6 +198,20 @@ pipeline:
                 - AllErrors
               action:
                 type: StageRollback
+        variables:
+          - name: okDev
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okDev>
+          - name: isApprovedDev
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.devapproval.spec.execution.steps.isApproved.output.outputVariables.isApproved>
+        when:
+          pipelineStatus: All
+          condition: <+stage.variables.okDev> == "1" && <+stage.variables.isApprovedDev> =="1"
     - stage:
         name: ppd-approval
         identifier: ppdapproval
