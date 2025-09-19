@@ -1,0 +1,197 @@
+pipeline:
+  name: testing_configuration
+  identifier: testing_configuration
+  projectIdentifier: appattendance
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: pipeline_init
+        identifier: pipeline_init
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: false
+            paths: []
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.test
+              namespace: default
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: init_codebase
+                  identifier: init_codebase
+                  spec:
+                    connectorRef: account.harnessImage
+                    image: ubuntu:latest
+                    shell: Bash
+                    command: echo "test"
+          buildIntelligence:
+            enabled: false
+    - stage:
+        name: trigger_configuration
+        identifier: inti_configuration
+        description: ""
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: inticonfig
+                  identifier: inticonfig
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: |
+                          #!/bin/bash
+                          set -euo pipefail
+
+                          # ------------------------------------------------------------
+                          # 🟢 Collect Harness trigger context (always quoted → safe)
+                          # ------------------------------------------------------------
+                          triggerType="<+trigger.type>"        # Manual, Webhook, Scheduled
+                          branch="<+codebase.branch>"          # branch name or null
+                          tag="<+codebase.tag>"                # git tag or null
+                          commitId="<+codebase.commitSha>"     # commit SHA or null
+                          srcbranch="<+trigger.sourceBranch>"  # PR source branch
+                          event="<+trigger.event>"             # PR, PUSH, etc.
+
+
+                          # ------------------------------------------------------------
+                          # 🟢 Final decision
+                          # ------------------------------------------------------------
+                          #echo "Resolved appVersion: $appVersion"
+                          # echo "isOkForBuild=$isOkForBuild"
+                          # echo "isOkForDev=$isOkForDev"
+                          # echo "isOkForQa=$isOkForQa"
+                          # echo "isOkForPprAndPrd=$isOkForPprAndPrd"
+                          # echo "isCronBuild=$isCronBuild"
+
+                          # Export for Harness output variables
+                          # echo "isOkForBuild=$isOkForBuild" >> build.env
+                          # echo "isOkForDev=$isOkForDev" >> build.env
+                          # echo "isOkForQa=$isOkForQa" >> build.env
+                          # echo "isOkForPprAndPrd=$isOkForPprAndPrd" >> build.env
+                          # echo "isCronBuild=$isCronBuild" >> build.env
+                          # echo "appVersion=$appVersion" >> build.env
+                          # echo "commitId=$commitId" >> build.env
+                    environmentVariables: []
+                    outputVariables: []
+                  timeout: 10m
+        tags: {}
+    - stage:
+        name: Build
+        identifier: Build
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: false
+          caching:
+            enabled: true
+            override: false
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.test
+              namespace: dev
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: test
+                  identifier: Run_1
+                  spec:
+                    connectorRef: mydockerhub
+                    image: nginx:latest
+                    shell: Sh
+                    command: echo "test"
+        when:
+          pipelineStatus: Success
+    - stage:
+        name: dev-approval
+        identifier: devapproval
+        description: ""
+        type: Approval
+        spec:
+          execution:
+            steps:
+              - step:
+                  name: dev-approval
+                  identifier: devapproval
+                  type: HarnessApproval
+                  timeout: 1d
+                  spec:
+                    approvalMessage: |-
+                      Please review the following information
+                      and approve the pipeline progression
+                    includePipelineExecutionHistory: true
+                    approvers:
+                      minimumCount: 1
+                      disallowPipelineExecutor: false
+                      userGroups:
+                        - devapprovers
+                    isAutoRejectEnabled: false
+                    approverInputs: []
+        tags: {}
+    - stage:
+        name: dev-deploy
+        identifier: devdeploy
+        description: ""
+        type: Deployment
+        spec:
+          deploymentType: Kubernetes
+          service:
+            serviceRef: deployweb
+          environment:
+            environmentRef: dev
+            deployToAll: false
+            infrastructureDefinitions:
+              - identifier: devinfra
+          execution:
+            steps:
+              - step:
+                  name: Rollout Deployment
+                  identifier: rolloutDeployment
+                  type: K8sRollingDeploy
+                  timeout: 10m
+                  spec:
+                    skipDryRun: false
+                    pruningEnabled: false
+            rollbackSteps:
+              - step:
+                  name: Rollback Rollout Deployment
+                  identifier: rollbackRolloutDeployment
+                  type: K8sRollingRollback
+                  timeout: 10m
+                  spec:
+                    pruningEnabled: false
+        tags: {}
+        failureStrategies:
+          - onFailure:
+              errors:
+                - AllErrors
+              action:
+                type: StageRollback
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.tonystarkac
+        repoName: experimental-project
+        build: <+input>
+        sparseCheckout: []
