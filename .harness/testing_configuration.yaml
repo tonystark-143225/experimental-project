@@ -58,15 +58,15 @@ pipeline:
                         script: "#!/bin/bash\nset -euo pipefail\n\n# ------------------------------------------------------------\n# 🟢 Collect Harness trigger context (always quoted → safe)\n# ------------------------------------------------------------\n\ntriggerType=\"<+trigger.type>\"        # Manual, Webhook, Scheduled\nbranch=\"<+codebase.branch>\"          # branch name or null\ntag=\"<+codebase.tag>\"                # git tag or null\ncommitId=\"<+codebase.commitSha>\"     # commit SHA or null\nsrcbranch=\"<+trigger.sourceBranch>\"  # PR source branch\nevent=\"<+trigger.event>\"             # PR, PUSH, etc.\n\nif [ \"$triggerType\" = \"Manual\" ]; then\n   isOkForBuild=1\n   isOkForDev=1\nelif [ \"$triggerType\" = \"Scheduled\" ]; then\n     isOkForBuild=1\n     isOkForDev=1\n     isOkForPpd=1\nfi\n\necho \"isOkForBuild=$isOkForBuild\"\necho \"isOkForDev=$isOkForDev\"\necho \"isOkForPpd=$isOkForPpd\"\n# environmentVariables: []\n# \toutputVariables:\n# \t- name: isOkForBuild\n# \t- name: isOkForDev\n# \t- name: isOkForPpd\n# ------------------------------------------------------------\n# 🟢 Final decision\n# ------------------------------------------------------------\n#echo \"Resolved appVersion: $appVersion\"\n# echo \"isOkForBuild=$isOkForBuild\"\n# echo \"isOkForDev=$isOkForDev\"\n# echo \"isOkForQa=$isOkForQa\"\n# echo \"isOkForPprAndPrd=$isOkForPprAndPrd\"\n# echo \"isCronBuild=$isCronBuild\"\n\n# Export for Harness output variables\n# echo \"isOkForBuild=$isOkForBuild\" >> build.env\n# echo \"isOkForDev=$isOkForDev\" >> build.env\n# echo \"isOkForQa=$isOkForQa\" >> build.env\n# echo \"isOkForPprAndPrd=$isOkForPprAndPrd\" >> build.env\n# echo \"isCronBuild=$isCronBuild\" >> build.env\n# echo \"appVersion=$appVersion\" >> build.env\n# echo \"commitId=$commitId\" >> build.env\n"
                     environmentVariables: []
                     outputVariables:
-                      - name: isOkForBuild
+                      - name: okBuild
                         type: String
-                        value: ""
-                      - name: isOkForDev
+                        value: isOkForBuild
+                      - name: okDev
                         type: String
-                        value: ""
-                      - name: isOkForPpd
+                        value: isOkForDev
+                      - name: okPpd
                         type: String
-                        value: ""
+                        value: isOkForPpd
                   timeout: 10m
         tags: {}
     - stage:
@@ -100,6 +100,13 @@ pipeline:
                     command: echo "test"
         when:
           pipelineStatus: Success
+          condition: <+stage.variables.okBuild> == "1"
+        variables:
+          - name: okBuild
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okBuild>
     - stage:
         name: dev-approval
         identifier: devapproval
