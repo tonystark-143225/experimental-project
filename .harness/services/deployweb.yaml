@@ -1,0 +1,5 @@
+service:
+  name: deploy-web
+  identifier: deployweb
+  orgIdentifier: default
+  projectIdentifier: appattendance
