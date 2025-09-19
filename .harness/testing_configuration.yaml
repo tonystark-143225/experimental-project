@@ -18,8 +18,8 @@ pipeline:
           infrastructure:
             type: KubernetesDirect
             spec:
-              connectorRef: <+input>
-              namespace: <+input>
+              connectorRef: account.test
+              namespace: default
               automountServiceAccountToken: true
               nodeSelector: {}
               os: Linux
