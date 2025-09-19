@@ -54,87 +54,95 @@ pipeline:
                       spec:
                         script: |-
                           #!/bin/bash
-                          set -e
+                          set -euo pipefail
 
-                          branch=<+codebase.branch>
-                          tag=<+codebase.tag>
-                          commitId=<+codebase.commitSha>
-                          srcbranch=<+trigger.sourceBranch>
-                          event=<+trigger.event>
+                          # Harness expressions for trigger context
+                          branch="${<+codebase.branch>}"
+                          tag="${<+codebase.tag>}"
+                          commitId="${<+codebase.commitSha>}"
+                          srcbranch="${<+trigger.sourceBranch>}"
+                          event="${<+trigger.event>}"               # e.g. PR, PUSH
+                          triggerType="${<+trigger.type>}"         # e.g. Webhook, Manual, Scheduled
+
+                          # Normalize nulls
+                          branch="${branch:-null}"
+                          tag="${tag:-null}"
+                          commitId="${commitId:-unknown}"
+                          srcbranch="${srcbranch:-null}"
+                          event="${event:-null}"
+                          triggerType="${triggerType:-null}"
 
                           # Default flags
                           isOkForBuild=0
                           isOkForDev=0
                           isOkForQa=0
                           isOkForPprAndPrd=0
+                          isCronBuild=0
 
-                          # Versioning logic
-                          if [[ "$event" == "PR" ]]; then
-                              appVersion=0.0.0-${srcbranch//[\/,_]/-}-$commitId
+                          # App version default
+                          appVersion="0.0.0-$(date +%Y%m%d%H%M%S)"
+
+                          echo "Trigger type: $triggerType"
+                          echo "Event: $event"
+                          echo "Branch: $branch"
+                          echo "Tag: $tag"
+                          echo "Commit ID: $commitId"
+                          echo "Source Branch: $srcbranch"
+
+                          # Regex patterns
+                          regexStableReleaseTag="^([0-9]+)(\.([0-9]+)){2,5}$"
+                          regexUnstableReleaseTag="^([0-9]+)(\.([0-9]+)){2,5}-.*$"
+
+                          # ----------------------------
+                          # 🔁 Trigger Handling Logic
+                          # ----------------------------
+
+                          if [[ "$triggerType" == "Scheduled" ]]; then
+                              # Scheduled (cron) build
+                              appVersion="0.0.0-cron-$(date +%Y%m%d%H%M%S)"
+                              isOkForBuild=1
+                              isCronBuild=1
+
+                          elif [[ "$event" == "PR" ]]; then
+                              # Pull request event
+                              cleanSrcBranch="${srcbranch//[\/,_]/-}"
+                              appVersion="0.0.0-${cleanSrcBranch}-${commitId}"
                               isOkForBuild=1
                               isOkForDev=1
-                              isOkForQa=0
-                              isOkForPprAndPrd=0
 
-                          elif [[ "$tag" == "null" ]]; then
-                              if [[ "$branch" == "null" ]]; then
-                                  appVersion=0.0.0-$(date +%Y%m%d%H%M%S)
+                          elif [[ "$tag" != "null" && "$tag" != "" ]]; then
+                              # Tag-based trigger (likely release)
+                              appVersion="${tag//[\/,_]/-}"
+
+                              if [[ "$appVersion" =~ $regexStableReleaseTag ]]; then
+                                  isOkForBuild=1
+                                  isOkForDev=1
+                                  isOkForQa=1
+                                  isOkForPprAndPrd=1
+                              elif [[ "$appVersion" =~ $regexUnstableReleaseTag ]]; then
+                                  isOkForBuild=1
+                                  isOkForDev=1
+                                  isOkForQa=1
+                                  isOkForPprAndPrd=0
                               else
-                                  appVersion=0.0.0-${branch//[\/,_]/-}-$commitId
+                                  # Invalid or unknown tag format
+                                  isOkForBuild=0
                               fi
+
+                          elif [[ "$branch" != "null" && "$branch" != "" ]]; then
+                              # Branch push or manual run on a branch
+                              cleanBranch="${branch//[\/,_]/-}"
+                              appVersion="0.0.0-${cleanBranch}-${commitId}"
                               isOkForBuild=1
                               isOkForDev=1
                               isOkForQa=1
                               isOkForPprAndPrd=0
 
                           else
-                              appVersion=${tag//[\/,_]/-}
-                              regexStableReleaseTag="^([0-9][0-9])(\.([0-9][0-9])){2,5}$"
-                              regexUnstableReleaseTag="^([0-9][0-9])(\.([0-9][0-9])){2,5}-.*$"
-
-                              if [[ $appVersion =~ $regexStableReleaseTag ]]; then
-                                  isOkForBuild=1
-                                  isOkForDev=1
-                                  isOkForQa=1
-                                  isOkForPprAndPrd=1
-                              elif [[ $appVersion =~ $regexUnstableReleaseTag ]]; then
-                                  isOkForBuild=1
-                                  isOkForDev=1
-                                  isOkForQa=1
-                                  isOkForPprAndPrd=0
-                              else
-                                  isOkForBuild=0
-                                  isOkForDev=0
-                                  isOkForQa=0
-                                  isOkForPprAndPrd=0
-                              fi
+                              # Unknown trigger type or invalid input
+                              echo "⚠️  Unknown or unsupported trigger type: $triggerType / event: $event"
+                              isOkForBuild=0
                           fi
-
-                          echo "Resolved appVersion: $appVersion"
-                          echo "isOkForBuild=$isOkForBuild, isOkForDev=$isOkForDev, isOkForQa=$isOkForQa, isOkForPprAndPrd=$isOkForPprAndPrd"
-
-                          # Artifactory existence check (only if build is allowed)
-                          # if [[ $isOkForBuild -eq 1 ]]; then
-                          #     artifactoryRequestBody="items.find({\"repo\":\"xlcgtpsdc-iqma-generic\", \"path\":\"completedBuilds/app-iqma\", \"name\":\"$appVersion.completed\"})"
-                          #     artifactoryResponse=$(curl -X POST -H "Content-Type: text/plain" \
-                          #         -d "$artifactoryRequestBody" \
-                          #         -u "${pipeline.variables.jfrog_nuget_username}:${pipeline.variables.jfrog_nuget_token_npd}" \
-                          #         "https://artifactory.platform.axal-cloud.com/artifactory/api/search/aql" -s)
-
-                          #     echo "Artifactory response:"
-                          #     echo "$artifactoryResponse"
-
-                          #     artifactoryNbExisting=$(echo "$artifactoryResponse" | jq '.range.total')
-                          #     echo "Artifactory nbExisting: $artifactoryNbExisting"
-
-                          #     if [[ $artifactoryNbExisting -ne 0 ]]; then
-                          #         echo "Artifactory package already exists for this version"
-                          #         echo "Build will be skipped and already existing package in Artifactory for this version will be used"
-                          #         isOkForBuild=0
-                          #     fi
-                          # fi
-
-                          echo "Final decision: isOkForBuild=$isOkForBuild"
                     environmentVariables: []
                     outputVariables:
                       - name: okBuild
