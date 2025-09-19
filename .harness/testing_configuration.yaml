@@ -114,25 +114,25 @@ pipeline:
                           echo "isOkForBuild=$isOkForBuild, isOkForDev=$isOkForDev, isOkForQa=$isOkForQa, isOkForPprAndPrd=$isOkForPprAndPrd"
 
                           # Artifactory existence check (only if build is allowed)
-                          if [[ $isOkForBuild -eq 1 ]]; then
-                              artifactoryRequestBody="items.find({\"repo\":\"xlcgtpsdc-iqma-generic\", \"path\":\"completedBuilds/app-iqma\", \"name\":\"$appVersion.completed\"})"
-                              artifactoryResponse=$(curl -X POST -H "Content-Type: text/plain" \
-                                  -d "$artifactoryRequestBody" \
-                                  -u "${pipeline.variables.jfrog_nuget_username}:${pipeline.variables.jfrog_nuget_token_npd}" \
-                                  "https://artifactory.platform.axal-cloud.com/artifactory/api/search/aql" -s)
+                          # if [[ $isOkForBuild -eq 1 ]]; then
+                          #     artifactoryRequestBody="items.find({\"repo\":\"xlcgtpsdc-iqma-generic\", \"path\":\"completedBuilds/app-iqma\", \"name\":\"$appVersion.completed\"})"
+                          #     artifactoryResponse=$(curl -X POST -H "Content-Type: text/plain" \
+                          #         -d "$artifactoryRequestBody" \
+                          #         -u "${pipeline.variables.jfrog_nuget_username}:${pipeline.variables.jfrog_nuget_token_npd}" \
+                          #         "https://artifactory.platform.axal-cloud.com/artifactory/api/search/aql" -s)
 
-                              echo "Artifactory response:"
-                              echo "$artifactoryResponse"
+                          #     echo "Artifactory response:"
+                          #     echo "$artifactoryResponse"
 
-                              artifactoryNbExisting=$(echo "$artifactoryResponse" | jq '.range.total')
-                              echo "Artifactory nbExisting: $artifactoryNbExisting"
+                          #     artifactoryNbExisting=$(echo "$artifactoryResponse" | jq '.range.total')
+                          #     echo "Artifactory nbExisting: $artifactoryNbExisting"
 
-                              if [[ $artifactoryNbExisting -ne 0 ]]; then
-                                  echo "Artifactory package already exists for this version"
-                                  echo "Build will be skipped and already existing package in Artifactory for this version will be used"
-                                  isOkForBuild=0
-                              fi
-                          fi
+                          #     if [[ $artifactoryNbExisting -ne 0 ]]; then
+                          #         echo "Artifactory package already exists for this version"
+                          #         echo "Build will be skipped and already existing package in Artifactory for this version will be used"
+                          #         isOkForBuild=0
+                          #     fi
+                          # fi
 
                           echo "Final decision: isOkForBuild=$isOkForBuild"
                     environmentVariables: []
