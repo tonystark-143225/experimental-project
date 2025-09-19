@@ -11,10 +11,11 @@ pipeline:
         description: ""
         type: CI
         spec:
-          cloneCodebase: false
+          cloneCodebase: true
           caching:
             enabled: true
             override: false
+            paths: []
           infrastructure:
             type: KubernetesDirect
             spec:
@@ -34,6 +35,8 @@ pipeline:
                     image: ubuntu:latest
                     shell: Bash
                     command: echo "test"
+          buildIntelligence:
+            enabled: false
     - stage:
         name: trigger_configuration
         identifier: inti_configuration
@@ -206,3 +209,10 @@ pipeline:
           pipelineStatus: Success
           condition: |
             <+pipeline.stages.trigger_configuration.spec.execution.steps.inticonfig.output.outputVariables.okBuild> == "1"
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.tonystarkac
+        repoName: experimental-project
+        build: <+input>
+        sparseCheckout: []
