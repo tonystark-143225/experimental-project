@@ -1,0 +1,14 @@
+inputSet:
+  name: tag-trigger
+  identifier: tagtrigger
+  orgIdentifier: default
+  projectIdentifier: appattendance
+  pipeline:
+    identifier: testing_configuration
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
