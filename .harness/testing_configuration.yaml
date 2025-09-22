@@ -39,7 +39,7 @@ pipeline:
             enabled: false
     - stage:
         name: trigger_configuration
-        identifier: inti_configuration
+        identifier: trigger_configuration
         description: ""
         type: Custom
         spec:
@@ -47,8 +47,8 @@ pipeline:
             steps:
               - step:
                   type: ShellScript
-                  name: inticonfig
-                  identifier: inticonfig
+                  name: vamsi_config
+                  identifier: vamsi_config
                   spec:
                     shell: Bash
                     executionTarget: {}
@@ -137,7 +137,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okBuild>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputvariables.okBuild>
     - stage:
         name: dev-approval
         identifier: devapproval
@@ -186,7 +186,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okDev>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okDev>
         when:
           pipelineStatus: All
           condition: <+stage.variables.okDev> == "1"
