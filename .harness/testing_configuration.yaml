@@ -82,6 +82,7 @@ pipeline:
                                isOkForBuild=1
                                isOkForDev=1
                                isOkForPpd=0
+                               isOkForPrd=1
                           elif [[ "$event" == "PR" ]]; then
                                 isOkForBuild=1
                                 isOkForDev=1
