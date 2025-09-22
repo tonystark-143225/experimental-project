@@ -189,7 +189,7 @@ pipeline:
             value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okDev>
         when:
           pipelineStatus: All
-          condition: <+stage.stage.variables.okDev> == "1"
+          condition: <+stage.variables.okDev> == "1"
     - stage:
         name: dev-deploy
         identifier: devdeploy
