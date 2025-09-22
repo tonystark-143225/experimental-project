@@ -237,7 +237,33 @@ pipeline:
                         - account._account_all_users
                     isAutoRejectEnabled: false
                     approverInputs: []
+              - step:
+                  type: ShellScript
+                  name: isApproved
+                  identifier: isApproved
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: isApproved=1
+                    environmentVariables: []
+                    outputVariables:
+                      - name: isApproved
+                        type: String
+                        value: isApproved
+                  timeout: 10m
         tags: {}
+        variables:
+          - name: okPpd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPpd>
+        when:
+          pipelineStatus: Success
+          condition: <+stage.stage.variables.okPpd> == "1"
     - stage:
         name: ppd-deploy
         identifier: ppddeploy
@@ -277,6 +303,20 @@ pipeline:
                 - AllErrors
               action:
                 type: StageRollback
+        variables:
+          - name: okPpd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPpd>
+          - name: isApprovedPpd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.ppdapproval.spec.execution.steps.isApproved.output.outputVariables.isApproved>
+        when:
+          pipelineStatus: Success
+          condition: <+stage.variables.okPpd> == "1" && <+stage.variables.isApprovedPpd> =="1"
     - stage:
         name: prd-approval
         identifier: prdapproval
@@ -302,7 +342,33 @@ pipeline:
                         - account._account_all_users
                     isAutoRejectEnabled: false
                     approverInputs: []
+              - step:
+                  type: ShellScript
+                  name: isApproved
+                  identifier: isApproved
+                  spec:
+                    shell: Bash
+                    executionTarget: {}
+                    source:
+                      type: Inline
+                      spec:
+                        script: isApproved=1
+                    environmentVariables: []
+                    outputVariables:
+                      - name: isApproved
+                        type: String
+                        value: isApproved
+                  timeout: 10m
         tags: {}
+        variables:
+          - name: okPrd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPrd>
+        when:
+          pipelineStatus: Success
+          condition: <+stage.stage.variables.okPrd> == "1"
     - stage:
         name: prd-deploy
         identifier: prddeploy
@@ -342,6 +408,20 @@ pipeline:
                 - AllErrors
               action:
                 type: StageRollback
+        when:
+          pipelineStatus: Success
+          condition: <+stage.variables.okPrd> == "1" && <+stage.variables.isApprovedPrd> =="1"
+        variables:
+          - name: okPrd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPrd>
+          - name: isApprovedPrd
+            type: String
+            description: ""
+            required: false
+            value: <+pipeline.stages.devapproval.spec.execution.steps.isApproved.output.outputVariables.isApproved>
   properties:
     ci:
       codebase:
