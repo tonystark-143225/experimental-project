@@ -1,0 +1,14 @@
+inputSet:
+  name: cron-trigger
+  identifier: crontrigger
+  orgIdentifier: default
+  projectIdentifier: appattendance
+  pipeline:
+    identifier: testing_configuration
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: main
