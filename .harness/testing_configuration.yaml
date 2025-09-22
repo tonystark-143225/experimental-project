@@ -291,7 +291,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPpd>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPpd>
         when:
           pipelineStatus: Success
           condition: <+stage.stage.variables.okPpd> == "1"
@@ -339,7 +339,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPpd>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPpd>
           - name: isApprovedPpd
             type: String
             description: ""
@@ -396,7 +396,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPrd>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPrd>
         when:
           pipelineStatus: Success
           condition: <+stage.stage.variables.okPrd> == "1"
@@ -447,7 +447,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPrd>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPrd>
           - name: isApprovedPrd
             type: String
             description: ""
