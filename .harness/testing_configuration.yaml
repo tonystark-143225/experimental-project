@@ -71,7 +71,7 @@ pipeline:
                           event="<+trigger.event>"             # PR, PUSH, etc.
 
                           if [ "$triggerType" = "Manual" ]; then
-                             isOkForBuild=0
+                             isOkForBuild=1
                              isOkForDev=1
                           elif [ "$triggerType" = "Scheduled" ]; then
                                isOkForBuild=1
