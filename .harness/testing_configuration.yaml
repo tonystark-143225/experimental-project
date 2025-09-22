@@ -189,7 +189,7 @@ pipeline:
             value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okDev>
         when:
           pipelineStatus: All
-          condition: <+stage.variables.okDev> == "1"
+          condition: <+stage.stage.variables.okDev> == "1"
     - stage:
         name: dev-deploy
         identifier: devdeploy
@@ -294,7 +294,7 @@ pipeline:
             value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPpd>
         when:
           pipelineStatus: Success
-          condition: <+stage.variables.okPpd> == "1"
+          condition: <+stage.stage.variables.okPpd> == "1"
     - stage:
         name: ppd-deploy
         identifier: ppddeploy
@@ -399,7 +399,7 @@ pipeline:
             value: <+pipeline.stages.inti_configuration.spec.execution.steps.inticonfig.output.outputVariables.okPrd>
         when:
           pipelineStatus: Success
-          condition: <+stage.variables.okPrd> == "1"
+          condition: <+stage.stage.variables.okPrd> == "1"
     - stage:
         name: prd-deploy
         identifier: prddeploy
@@ -452,7 +452,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.devapproval.spec.execution.steps.isApproved.output.outputVariables.isApproved>
+            value: <+pipeline.stages.prdapproval.spec.execution.steps.isApproved.output.outputVariables.isApproved>
   properties:
     ci:
       codebase:
