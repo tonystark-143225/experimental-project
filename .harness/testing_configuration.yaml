@@ -71,6 +71,10 @@ pipeline:
                           srcbranch=<+trigger.sourceBranch>  # PR source branch
                           event=<+trigger.event>         # PR, PUSH, etc.
 
+                          echo "triggerType: '$triggerType'"
+                          echo "event: '$event'"
+
+
                           if [[ "$triggerType" = "Manual" ]]; then
                              isOkForBuild=1
                              isOkForDev=1
