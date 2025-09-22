@@ -137,7 +137,7 @@ pipeline:
             type: String
             description: ""
             required: false
-            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputvariables.okBuild>
+            value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okBuild>
     - stage:
         name: dev-approval
         identifier: devapproval
