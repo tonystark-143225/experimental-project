@@ -80,7 +80,7 @@ pipeline:
                              isOkForDev=1
                           elif [[ "$triggerType" = "Scheduled" ]]; then
                                isOkForBuild=1
-                               isOkForDev=0
+                               isOkForDev=1
                                isOkForPpd=0
                           elif [[ "$event" == "PR" ]]; then
                                 isOkForBuild=1
