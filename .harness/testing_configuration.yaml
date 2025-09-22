@@ -70,14 +70,14 @@ pipeline:
                           srcbranch="<+trigger.sourceBranch>"  # PR source branch
                           event="<+trigger.event>"             # PR, PUSH, etc.
 
-                          if [ "$triggerType" = "Manual" ]; then
+                          if [[ "$triggerType" = "Manual" ]]; then
                              isOkForBuild=1
                              isOkForDev=1
-                          elif [ "$triggerType" = "Scheduled" ]; then
+                          elif [[ "$triggerType" = "Scheduled" ]]; then
                                isOkForBuild=1
                                isOkForDev=0
                                isOkForPpd=0
-                          elif [ "$event" == "PR" ]; then
+                          elif [[ "$event" == "PR" ]]; then
                                 isOkForBuild=1
                                 isOkForDev=1
                                 isOkForPpd=1
