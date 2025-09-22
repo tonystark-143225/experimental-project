@@ -3,7 +3,8 @@ pipeline:
   identifier: testing_configuration
   projectIdentifier: appattendance
   orgIdentifier: default
-  tags: {}
+  tags:
+    ai_generated: "true"
   stages:
     - stage:
         name: pipeline_init
@@ -285,6 +286,7 @@ pipeline:
                         type: String
                         value: isApproved
                   timeout: 10m
+            rollbackSteps: []
         tags: {}
         variables:
           - name: okPpd
@@ -294,7 +296,7 @@ pipeline:
             value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPpd>
         when:
           pipelineStatus: Success
-          condition: <+stage.stage.variables.okPpd> == "1"
+          condition: <+stage.variables.okPpd> == "1"
     - stage:
         name: ppd-deploy
         identifier: ppddeploy
@@ -390,6 +392,7 @@ pipeline:
                         type: String
                         value: isApproved
                   timeout: 10m
+            rollbackSteps: []
         tags: {}
         variables:
           - name: okPrd
@@ -399,7 +402,7 @@ pipeline:
             value: <+pipeline.stages.trigger_configuration.spec.execution.steps.vamsi_config.output.outputVariables.okPrd>
         when:
           pipelineStatus: Success
-          condition: <+stage.stage.variables.okPrd> == "1"
+          condition: <+stage.variables.okPrd> == "1"
     - stage:
         name: prd-deploy
         identifier: prddeploy
@@ -460,3 +463,4 @@ pipeline:
         repoName: experimental-project
         build: <+input>
         sparseCheckout: []
+  description: This pipeline was updated by Harness AI on 2025-09-22 12:22:59 UTC by vamsi.awscloud.
