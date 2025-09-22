@@ -63,12 +63,12 @@ pipeline:
                           # 🟢 Collect Harness trigger context (always quoted → safe)
                           # ------------------------------------------------------------
 
-                          triggerType="<+trigger.type>"        # Manual, Webhook, Scheduled
-                          branch="<+codebase.branch>"          # branch name or null
-                          tag="<+codebase.tag>"                # git tag or null
-                          commitId="<+codebase.commitSha>"     # commit SHA or null
-                          srcbranch="<+trigger.sourceBranch>"  # PR source branch
-                          event="<+trigger.event>"             # PR, PUSH, etc.
+                          triggerType=<+trigger.type>        # Manual, Webhook, Scheduled
+                          branch=<+codebase.branch>          # branch name or null
+                          tag=<+codebase.tag>            # git tag or null
+                          commitId=<+codebase.commitSha>     # commit SHA or null
+                          srcbranch=<+trigger.sourceBranch>  # PR source branch
+                          event=<+trigger.event>         # PR, PUSH, etc.
 
                           if [[ "$triggerType" = "Manual" ]]; then
                              isOkForBuild=1
