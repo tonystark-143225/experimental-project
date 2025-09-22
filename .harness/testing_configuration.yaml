@@ -95,6 +95,9 @@ pipeline:
                       - name: okPpd
                         type: String
                         value: isOkForPpd
+                      - name: okPrd
+                        type: String
+                        value: isOkForPrd
                   timeout: 10m
         tags: {}
     - stage:
