@@ -19,16 +19,32 @@ pipeline:
                   identifier: RunTagCheckScript
                   spec:
                     shell: Bash
-                    onDelegate: true
                     source:
                       type: Inline
                       spec:
-                        script: |-
+                        script: |
                           #!/bin/bash
-                          referenceTag="8.0"
-                          imageName="mysql"
-                          namespace="library"
-                          pageSize=100
+
+                          # ========= Install jq if missing =========
+                          if ! command -v jq &> /dev/null; then
+                            echo "📦 Installing jq..."
+                            if command -v microdnf &> /dev/null; then
+                              microdnf install -y jq
+                            elif command -v dnf &> /dev/null; then
+                              dnf install -y jq
+                            else
+                              yum install -y jq
+                            fi
+                          fi
+
+                          # ========= Configurable Variables =========
+                          referenceTag="8.0"            # Tag to compare against
+                          imageName="mysql"             # Docker image name
+                          namespace="library"           # Use "library" for official images
+                          pageSize=100                  # Number of tags to fetch
+                          # ==========================================
+
+                          # Docker Hub API base
                           baseUrl="https://registry.hub.docker.com/v2/repositories/${namespace}/${imageName}"
                           referenceUrl="${baseUrl}/tags/${referenceTag}"
 
@@ -37,7 +53,7 @@ pipeline:
 
                           if [[ -z "$referenceJson" || "$referenceJson" == *"Not Found"* ]]; then
                               echo "❌ Failed to fetch tag '$referenceTag'"
-                              echo "HARNESS_OUTPUT_VAR=No reference tag found" >> $HARNESS_ENV_EXPORTS
+                              echo "HARNESS_OUTPUT_VAR=No reference tag found" >> $HARNESS_OUTPUT_FILE
                               exit 1
                           fi
 
@@ -45,15 +61,17 @@ pipeline:
                           echo "📌 '$referenceTag' last updated at: $referenceLastUpdated"
                           echo
 
+                          # 2. Fetch latest tags
                           tagsUrl="${baseUrl}/tags?page_size=${pageSize}&ordering=last_updated"
                           tagsJson=$(curl -s "$tagsUrl")
 
                           if [[ -z "$tagsJson" || "$tagsJson" == *"error"* ]]; then
                               echo "❌ Failed to fetch tags list."
-                              echo "HARNESS_OUTPUT_VAR=Failed to fetch tags" >> $HARNESS_ENV_EXPORTS
+                              echo "HARNESS_OUTPUT_VAR=Failed to fetch tags" >> $HARNESS_OUTPUT_FILE
                               exit 1
                           fi
 
+                          # 3. Filter and display tags updated after reference
                           results=""
                           while read -r tag; do
                               tagName=$(echo "$tag" | jq -r '.name')
@@ -68,13 +86,15 @@ pipeline:
                               results="No new tags found after $referenceTag"
                           fi
 
-                          # Export result as Harness variable
-                          echo "HARNESS_OUTPUT_VAR=$results" >> $HARNESS_ENV_EXPORTS
+                          # Export result so Harness can pick it up
+                          echo "HARNESS_OUTPUT_VAR=$results" >> $HARNESS_OUTPUT_FILE
                     environmentVariables: []
                     outputVariables:
                       - name: TAG_CHECK_OUTPUT
                         type: String
                         value: HARNESS_OUTPUT_VAR
+                    executionTarget: {}
+                  timeout: 10m
               - step:
                   type: Email
                   name: SendEmailNotification
