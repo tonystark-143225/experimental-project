@@ -38,7 +38,6 @@ pipeline:
                           fi
 
                           # ========= Configurable Variables =========
-                          # Format: image|namespace|referenceTag
                           images=(
                             "mysql|library|8.0"
                             "redis|library|7.0"
@@ -91,13 +90,13 @@ pipeline:
                               all_results+="<br>"
                           done
 
-                          # Export HTML-formatted output to Harness
-                          echo "HARNESS_OUTPUT_VAR=$all_results" >> $HARNESS_OUTPUT_FILE
+                          # Output to Harness (captured by outputVariables)
+                          echo -e "$all_results"
                     environmentVariables: []
                     outputVariables:
                       - name: TAG_CHECK_OUTPUT
                         type: String
-                        value: HARNESS_OUTPUT_VAR
+                        value: <+step.output>
                     executionTarget: {}
                   timeout: 10m
               - step:
