@@ -37,58 +37,68 @@ pipeline:
                             fi
                           fi
 
+                          #!/bin/bash
+
                           # ========= Configurable Variables =========
-                          referenceTag="8.0"
-                          imageName="mysql"
-                          namespace="library"
-                          pageSize=100
+                          # Format: image|namespace|referenceTag
+                          images=(
+                            "mysql|library|8.0"
+                            "redis|library|7.0"
+                            "nginx|library|1.25"
+                          )
+
+                          pageSize=100  # Number of tags to fetch
                           # ==========================================
 
-                          baseUrl="https://registry.hub.docker.com/v2/repositories/${namespace}/${imageName}"
-                          referenceUrl="${baseUrl}/tags/${referenceTag}"
+                          for entry in "${images[@]}"; do
+                              IFS='|' read -r imageName namespace referenceTag <<< "$entry"
 
-                          echo "📌 Fetching reference tag '$referenceTag' info..."
-                          referenceJson=$(curl -s "$referenceUrl")
+                              echo "========================================="
+                              echo "🔍 Checking image: ${namespace}/${imageName}"
+                              echo "➡️  Reference tag: $referenceTag"
+                              
+                              # Docker Hub API base
+                              baseUrl="https://registry.hub.docker.com/v2/repositories/${namespace}/${imageName}"
 
-                          if [[ -z "$referenceJson" || "$referenceJson" == *"Not Found"* ]]; then
-                              echo "❌ Failed to fetch tag '$referenceTag'"
-                              echo "HARNESS_OUTPUT_VAR=No reference tag found" >> $HARNESS_OUTPUT_FILE
-                              exit 1
-                          fi
+                              # 1. Get last_updated of reference tag
+                              referenceUrl="${baseUrl}/tags/${referenceTag}"
+                              referenceJson=$(curl -s "$referenceUrl")
 
-                          referenceLastUpdated=$(echo "$referenceJson" | jq -r '.last_updated')
-                          echo "📌 '$referenceTag' last updated at: $referenceLastUpdated"
-                          echo
-
-                          tagsUrl="${baseUrl}/tags?page_size=${pageSize}&ordering=last_updated"
-                          tagsJson=$(curl -s "$tagsUrl")
-
-                          if [[ -z "$tagsJson" || "$tagsJson" == *"error"* ]]; then
-                              echo "❌ Failed to fetch tags list."
-                              echo "HARNESS_OUTPUT_VAR=Failed to fetch tags" >> $HARNESS_OUTPUT_FILE
-                              exit 1
-                          fi
-
-                          # ========= Filter and build results =========
-                          results=""
-                          while read -r tag; do
-                              tagName=$(echo "$tag" | jq -r '.name')
-                              tagUpdated=$(echo "$tag" | jq -r '.last_updated')
-
-                              if [[ "$tagUpdated" > "$referenceLastUpdated" ]]; then
-                                  results+="🆕 $tagName — Updated at: $tagUpdated"$'\n'
+                              if [[ -z "$referenceJson" || "$referenceJson" == *"Not Found"* ]]; then
+                                  echo "❌ Failed to fetch tag '$referenceTag'"
+                                  continue
                               fi
-                          done < <(echo "$tagsJson" | jq -c '.results[]')
 
-                          if [[ -z "$results" ]]; then
-                              results="No new tags found after $referenceTag"
-                          fi
+                              referenceLastUpdated=$(echo "$referenceJson" | jq -r '.last_updated')
+                              echo "📌 '$referenceTag' last updated at: $referenceLastUpdated"
+                              echo
 
-                          # ========= Write output to Harness correctly =========
-                          # Harness does not like literal newlines; convert them to literal \n
-                          results_for_harness=$(echo "$results" | sed ':a;N;$!ba;s/\n/\\n/g')
+                              # 2. Fetch latest tags
+                              tagsUrl="${baseUrl}/tags?page_size=${pageSize}&ordering=last_updated"
+                              tagsJson=$(curl -s "$tagsUrl")
 
-                          echo "HARNESS_OUTPUT_VAR=$results_for_harness" >> $HARNESS_OUTPUT_FILE
+                              if [[ -z "$tagsJson" || "$tagsJson" == *"error"* ]]; then
+                                  echo "❌ Failed to fetch tags list."
+                                  continue
+                              fi
+
+                              # 3. Filter and display tags updated after reference
+                              echo "📈 Tags updated after '$referenceTag':"
+                              found=false
+
+                              while read -r tag; do
+                                  tagName=$(echo "$tag" | jq -r '.name')
+                                  tagUpdated=$(echo "$tag" | jq -r '.last_updated')
+
+                                  if [[ "$tagUpdated" > "$referenceLastUpdated" ]]; then
+                                      echo "🆕 $tagName — Updated at: $tagUpdated"
+                                      found=true
+                                  fi
+                              done < <(echo "$tagsJson" | jq -c '.results[]')
+
+                              [[ "$found" != "true" ]] && echo "✅ No newer tags found."
+                              echo
+                          done
                     environmentVariables: []
                     outputVariables:
                       - name: TAG_CHECK_OUTPUT
