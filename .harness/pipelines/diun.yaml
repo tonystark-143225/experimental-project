@@ -113,7 +113,7 @@ pipeline:
                   name: SendEmailNotification
                   identifier: SendEmailNotification
                   spec:
-                    to: tonystark143225@gmail.com
+                    to: vamsi.awscloud@gmail.com
                     subject: New Docker Tags for MySQL
                     body: |
                       Hello Team,
@@ -124,3 +124,5 @@ pipeline:
 
                       Regards,
                       Harness Pipeline
+                    cc: ""
+                  timeout: 10m
