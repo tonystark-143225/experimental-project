@@ -1,0 +1,93 @@
+pipeline:
+  name: diun
+  identifier: diun
+  projectIdentifier: appattendance
+  orgIdentifier: default
+  tags: {}
+  stages:
+    - stage:
+        name: Check_Docker_Tags
+        identifier: Check_Docker_Tags
+        description: Check for new MySQL Docker tags and notify via email
+        type: Custom
+        spec:
+          execution:
+            steps:
+              - step:
+                  type: ShellScript
+                  name: RunTagCheckScript
+                  identifier: RunTagCheckScript
+                  spec:
+                    shell: Bash
+                    onDelegate: true
+                    source:
+                      type: Inline
+                      spec:
+                        script: |-
+                          #!/bin/bash
+                          referenceTag="8.0"
+                          imageName="mysql"
+                          namespace="library"
+                          pageSize=100
+                          baseUrl="https://registry.hub.docker.com/v2/repositories/${namespace}/${imageName}"
+                          referenceUrl="${baseUrl}/tags/${referenceTag}"
+
+                          echo "📌 Fetching reference tag '$referenceTag' info..."
+                          referenceJson=$(curl -s "$referenceUrl")
+
+                          if [[ -z "$referenceJson" || "$referenceJson" == *"Not Found"* ]]; then
+                              echo "❌ Failed to fetch tag '$referenceTag'"
+                              echo "HARNESS_OUTPUT_VAR=No reference tag found" >> $HARNESS_ENV_EXPORTS
+                              exit 1
+                          fi
+
+                          referenceLastUpdated=$(echo "$referenceJson" | jq -r '.last_updated')
+                          echo "📌 '$referenceTag' last updated at: $referenceLastUpdated"
+                          echo
+
+                          tagsUrl="${baseUrl}/tags?page_size=${pageSize}&ordering=last_updated"
+                          tagsJson=$(curl -s "$tagsUrl")
+
+                          if [[ -z "$tagsJson" || "$tagsJson" == *"error"* ]]; then
+                              echo "❌ Failed to fetch tags list."
+                              echo "HARNESS_OUTPUT_VAR=Failed to fetch tags" >> $HARNESS_ENV_EXPORTS
+                              exit 1
+                          fi
+
+                          results=""
+                          while read -r tag; do
+                              tagName=$(echo "$tag" | jq -r '.name')
+                              tagUpdated=$(echo "$tag" | jq -r '.last_updated')
+
+                              if [[ "$tagUpdated" > "$referenceLastUpdated" ]]; then
+                                  results+="🆕 $tagName — Updated at: $tagUpdated\n"
+                              fi
+                          done < <(echo "$tagsJson" | jq -c '.results[]')
+
+                          if [[ -z "$results" ]]; then
+                              results="No new tags found after $referenceTag"
+                          fi
+
+                          # Export result as Harness variable
+                          echo "HARNESS_OUTPUT_VAR=$results" >> $HARNESS_ENV_EXPORTS
+                    environmentVariables: []
+                    outputVariables:
+                      - name: TAG_CHECK_OUTPUT
+                        type: String
+                        value: HARNESS_OUTPUT_VAR
+              - step:
+                  type: Email
+                  name: SendEmailNotification
+                  identifier: SendEmailNotification
+                  spec:
+                    to: tonystark143225@gmail.com
+                    subject: New Docker Tags for MySQL
+                    body: |
+                      Hello Team,
+
+                      The following Docker tags were checked against reference tag **8.0**:
+
+                      <+pipeline.stages.Check_Docker_Tags.spec.execution.steps.RunTagCheckScript.output.outputVariables.TAG_CHECK_OUTPUT>
+
+                      Regards,
+                      Harness Pipeline
