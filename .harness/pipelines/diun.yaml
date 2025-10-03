@@ -8,7 +8,7 @@ pipeline:
     - stage:
         name: Check_Docker_Tags
         identifier: Check_Docker_Tags
-        description: Check for new MySQL Docker tags and notify via email
+        description: Check for new Docker tags and notify via email
         type: Custom
         spec:
           execution:
@@ -44,37 +44,35 @@ pipeline:
                             "redis|library|7.0"
                             "nginx|library|1.25"
                           )
-
-                          pageSize=100  # Number of tags to fetch
+                          pageSize=100
                           # ==========================================
 
-                          # Collect all output here
                           all_results=""
 
                           for entry in "${images[@]}"; do
                               IFS='|' read -r imageName namespace referenceTag <<< "$entry"
 
-                              all_results+="=========================================\n"
-                              all_results+="🔍 Checking image: ${namespace}/${imageName}\n"
-                              all_results+="➡️  Reference tag: $referenceTag\n"
+                              all_results+="=========================================<br>"
+                              all_results+="🔍 Checking image: ${namespace}/${imageName}<br>"
+                              all_results+="➡️  Reference tag: $referenceTag<br>"
 
                               baseUrl="https://registry.hub.docker.com/v2/repositories/${namespace}/${imageName}"
                               referenceUrl="${baseUrl}/tags/${referenceTag}"
                               referenceJson=$(curl -s "$referenceUrl")
 
                               if [[ -z "$referenceJson" || "$referenceJson" == *"Not Found"* ]]; then
-                                  all_results+="❌ Failed to fetch tag '$referenceTag'\n\n"
+                                  all_results+="❌ Failed to fetch tag '$referenceTag'<br><br>"
                                   continue
                               fi
 
                               referenceLastUpdated=$(echo "$referenceJson" | jq -r '.last_updated')
-                              all_results+="📌 '$referenceTag' last updated at: $referenceLastUpdated\n\n"
+                              all_results+="📌 '$referenceTag' last updated at: $referenceLastUpdated<br><br>"
 
                               tagsUrl="${baseUrl}/tags?page_size=${pageSize}&ordering=last_updated"
                               tagsJson=$(curl -s "$tagsUrl")
 
                               if [[ -z "$tagsJson" || "$tagsJson" == *"error"* ]]; then
-                                  all_results+="❌ Failed to fetch tags list.\n\n"
+                                  all_results+="❌ Failed to fetch tags list.<br><br>"
                                   continue
                               fi
 
@@ -84,19 +82,16 @@ pipeline:
                                   tagUpdated=$(echo "$tag" | jq -r '.last_updated')
 
                                   if [[ "$tagUpdated" > "$referenceLastUpdated" ]]; then
-                                      all_results+="🆕 $tagName — Updated at: $tagUpdated\n"
+                                      all_results+="🆕 $tagName — Updated at: $tagUpdated<br>"
                                       found=true
                                   fi
                               done < <(echo "$tagsJson" | jq -c '.results[]')
 
-                              if [[ "$found" != "true" ]]; then
-                                  all_results+="✅ No newer tags found.\n"
-                              fi
-
-                              all_results+="\n"
+                              [[ "$found" != "true" ]] && all_results+="✅ No newer tags found.<br>"
+                              all_results+="<br>"
                           done
 
-                          # Export multi-line output directly
+                          # Export HTML-formatted output to Harness
                           echo "HARNESS_OUTPUT_VAR=$all_results" >> $HARNESS_OUTPUT_FILE
                     environmentVariables: []
                     outputVariables:
@@ -111,15 +106,12 @@ pipeline:
                   identifier: SendEmailNotification
                   spec:
                     to: vamsi.awscloud@gmail.com
-                    subject: New Docker Tags for MySQL
+                    subject: New Docker Tags Notification
                     body: |
-                      Hello Team,
-
-                      The following Docker tags were checked against reference tag **8.0**:
-
-                      <+pipeline.stages.Check_Docker_Tags.spec.execution.steps.RunTagCheckScript.output.outputVariables.TAG_CHECK_OUTPUT>
-
-                      Regards,
+                      Hello Team,<br><br>
+                      The following Docker tags were checked:<br><br>
+                      <+pipeline.stages.Check_Docker_Tags.spec.execution.steps.RunTagCheckScript.output.outputVariables.TAG_CHECK_OUTPUT><br><br>
+                      Regards,<br>
                       Harness Pipeline
                     cc: ""
                   timeout: 10m
