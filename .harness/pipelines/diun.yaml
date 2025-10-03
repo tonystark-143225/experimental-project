@@ -96,11 +96,8 @@ pipeline:
                               all_results+="\n"
                           done
 
-                          # Convert literal newlines to \n for Harness
-                          all_results_harness=$(echo -e "$all_results" | sed ':a;N;$!ba;s/\n/\\n/g')
-
-                          # Export to Harness output variable
-                          echo "HARNESS_OUTPUT_VAR=$all_results_harness" >> $HARNESS_OUTPUT_FILE
+                          # Export multi-line output directly
+                          echo "HARNESS_OUTPUT_VAR=$all_results" >> $HARNESS_OUTPUT_FILE
                     environmentVariables: []
                     outputVariables:
                       - name: TAG_CHECK_OUTPUT
