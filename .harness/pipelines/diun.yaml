@@ -114,3 +114,35 @@ pipeline:
                       Harness Pipeline
                     cc: ""
                   timeout: 10m
+    - stage:
+        name: trigger pipeline
+        identifier: trigger_pipeline
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: false
+          caching:
+            enabled: true
+            override: false
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.test
+              namespace: dev
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Run_1
+                  identifier: Run_1
+                  spec:
+                    connectorRef: mydockerhub
+                    image: ubuntu:latest
+                    shell: Sh
+                    command: ls
+        when:
+          pipelineStatus: Success
+          condition: <+pipeline.status> == failed
