@@ -469,3 +469,16 @@ pipeline:
         build: <+input>
         sparseCheckout: []
   description: This pipeline was updated by Harness AI on 2025-09-22 12:22:59 UTC by vamsi.awscloud.
+  notificationRules:
+    - name: ai_self_heal
+      identifier: ai_self_heal
+      pipelineEvents:
+        - type: PipelineFailed
+      notificationMethod:
+        type: Webhook
+        spec:
+          webhookUrl: https://app.harness.io/gateway/pipeline/api/webhook/custom/DFKUW4enQ7-pLZoNv35xQw/v3?accountIdentifier=CvYTxb5IRXasJVAqLJDonA&orgIdentifier=default&projectIdentifier=agents&pipelineIdentifier=self_heal_solution&triggerIdentifier=ai_heal
+          headers:
+            sequenceId: <+pipeline.sequenceId>
+            repo: <+pipeline.properties.ci.codebase.repoName>
+      enabled: true
